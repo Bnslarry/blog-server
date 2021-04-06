@@ -3,6 +3,9 @@ const koaBody = require("koa-body");
 const cors = require("koa2-cors");
 const error = require("koa-json-error");
 const logger = require("koa-logger");
+const https = require('https');
+const fs = require('fs');
+const enforceHttps = require('koa-sslify');
 
 //  config
 const config = require("./config");
@@ -20,6 +23,9 @@ Object.keys(context).forEach((key) => {
 
 // moddlewares
 const authHandler = require('./middlewares/authHandler')
+
+// https
+app.use(enforceHttps());
 
 app
   .use(cors())
@@ -43,7 +49,13 @@ app
 
 loadRouter(app)
 
-app.listen(config.PORT, () => {
+const options = {
+  key: fs.readFileSync('./ssl/blog.yuhui.run.key'),
+  cert: fs.readFileSync('./ssl/blog.yuhui.run.pem')
+};
+
+
+https.createServer(options, app.callback()).listen(config.PORT, () => {
   db.sequelize
     .sync({ force: false }) // If force is true, each DAO will do DROP TABLE IF EXISTS ..., before it tries to create its own table
     .then(async () => {
